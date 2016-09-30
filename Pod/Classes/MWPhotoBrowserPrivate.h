@@ -35,6 +35,8 @@
 	UIToolbar *_toolbar;
 	NSTimer *_controlVisibilityTimer;
 	UIBarButtonItem *_previousButton, *_nextButton, *_actionButton, *_doneButton;
+    UIBarButtonItem *_leftCommentButton, *_rightCommentButton;
+    UILabel *_commentCountLabel;
     MBProgressHUD *_progressHUD;
     
     // Grid
@@ -72,6 +74,8 @@
     BOOL _viewHasAppearedInitially;
     CGPoint _currentGridContentOffset;
     
+    UIButton *cover;
+    UIView *shareSheet;
 }
 
 // Properties

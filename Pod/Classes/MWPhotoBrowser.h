@@ -43,6 +43,7 @@
 @property (nonatomic, weak) IBOutlet id<MWPhotoBrowserDelegate> delegate;
 @property (nonatomic) BOOL zoomPhotosToFill;
 @property (nonatomic) BOOL displayNavArrows;
+@property (nonatomic) BOOL displayCommentToolBar;
 @property (nonatomic) BOOL displayActionButton;
 @property (nonatomic) BOOL displaySelectionButtons;
 @property (nonatomic) BOOL alwaysShowControls;
@@ -52,6 +53,16 @@
 @property (nonatomic) BOOL autoPlayOnAppear;
 @property (nonatomic) NSUInteger delayToHideElements;
 @property (nonatomic, readonly) NSUInteger currentIndex;
+
+@property (copy, nonatomic) void(^leftCommentBlock)();
+@property (copy, nonatomic) void(^rightCommentBlock)();
+@property (copy, nonatomic) void(^shareCommentBlock)();
+
+@property (copy, nonatomic) void(^shareCommentToFriendBlock)();
+@property (copy, nonatomic) void(^shareCommentToWechatCircleBlock)();
+
+@property(nonatomic,copy)NSString *detailID;
+@property(nonatomic,assign)int countComment;
 
 // Customise image selection icons as they are the only icons with a colour tint
 // Icon should be located in the app's main bundle

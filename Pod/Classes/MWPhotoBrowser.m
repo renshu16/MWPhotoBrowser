@@ -14,6 +14,7 @@
 #import "UIImage+MWPhotoBrowser.h"
 
 #define PADDING                  10
+#define shareSheetHeight        190
 
 static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
@@ -67,6 +68,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _currentVideoIndex = NSUIntegerMax;
     _displayActionButton = YES;
     _displayNavArrows = NO;
+    _displayCommentToolBar = NO;
     _zoomPhotosToFill = YES;
     _performingLayout = NO; // Reset on view did appear
     _rotating = NO;
@@ -177,7 +179,39 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _nextButton = [[UIBarButtonItem alloc] initWithImage:nextButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(gotoNextPage)];
     }
     if (self.displayActionButton) {
-        _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
+        if (self.displayCommentToolBar) {
+            UIImage *shareButtonImage = [UIImage imageNamed:@"icon_share_right"];
+            _actionButton = [[UIBarButtonItem alloc] initWithImage:shareButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(actionButtonPressed:)];
+        }else{
+            _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
+        }
+    }
+    if (self.displayCommentToolBar) {
+        UIButton *leftCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 100, 44)];
+        UIImageView *commontIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_text_name"]];
+        CGFloat commentIconWidth = commontIcon.frame.size.width;
+        commontIcon.center = CGPointMake(commentIconWidth/2, (44-commentIconWidth)/2);
+        [leftCommontView addSubview:commontIcon];
+        UILabel *commontLabel = [[UILabel alloc] initWithFrame:CGRectMake(commentIconWidth, 0, 100-commentIconWidth, 44)];
+        commontLabel.font = [UIFont systemFontOfSize:14];
+        commontLabel.textColor = [UIColor colorWithRed:(101.0f)/255.0f green:(102.0f)/255.0f blue:(106.0f)/255.0f alpha:1.0f];
+        commontLabel.text = @"评论一下";
+        [leftCommontView addSubview:commontLabel];
+        [leftCommontView addTarget:self action:@selector(onLeftCommentAction) forControlEvents:UIControlEventTouchUpInside];
+        _leftCommentButton = [[UIBarButtonItem alloc] initWithCustomView:leftCommontView];
+        
+        UIButton *rightCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
+        UIImageView *commontIcon2 = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_text_name"]];
+        CGFloat commentIcon2Width = commontIcon2.frame.size.width;
+        commontIcon2.center = CGPointMake(commentIcon2Width/2, (44-commentIcon2Width)/2);
+        [rightCommontView addSubview:commontIcon2];
+        _commentCountLabel = [[UILabel alloc] initWithFrame:CGRectMake(44, 0, 60-commentIcon2Width, 44)];
+        _commentCountLabel.font = [UIFont systemFontOfSize:14];
+        _commentCountLabel.textColor = [UIColor colorWithRed:(101.0f)/255.0f green:(102.0f)/255.0f blue:(106.0f)/255.0f alpha:1.0f];
+        _commentCountLabel.text = _countComment > 0 ? [NSString stringWithFormat:@"%d",_countComment] : @"";
+        [rightCommontView addSubview:_commentCountLabel];
+        [rightCommontView addTarget:self action:@selector(onRightCommentAction) forControlEvents:UIControlEventTouchUpInside];
+        _rightCommentButton = [[UIBarButtonItem alloc] initWithCustomView:rightCommontView];
     }
     
     // Update
@@ -192,6 +226,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
 	// Super
     [super viewDidLoad];
+    
+    [self initShareSheet];
 	
 }
 
@@ -221,7 +257,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         // We're not first so show back button
         UIViewController *previousViewController = [self.navigationController.viewControllers objectAtIndex:self.navigationController.viewControllers.count-2];
         NSString *backButtonTitle = previousViewController.navigationItem.backBarButtonItem ? previousViewController.navigationItem.backBarButtonItem.title : previousViewController.title;
-        UIBarButtonItem *newBackButton = [[UIBarButtonItem alloc] initWithTitle:backButtonTitle style:UIBarButtonItemStylePlain target:nil action:nil];
+        UIBarButtonItem *newBackButton = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:nil action:nil];
         // Appearance
         [newBackButton setBackButtonBackgroundImage:nil forState:UIControlStateNormal barMetrics:UIBarMetricsDefault];
         [newBackButton setBackButtonBackgroundImage:nil forState:UIControlStateNormal barMetrics:UIBarMetricsLandscapePhone];
@@ -257,6 +293,17 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [items addObject:_nextButton];
         [items addObject:flexSpace];
     } else {
+        [items addObject:flexSpace];
+    }
+    
+    // Comment - Nav
+    if (_leftCommentButton && _rightCommentButton) {
+        [items removeAllObjects];
+        hasItems = NO;  //make shareButton show in top right
+        [items addObject:_leftCommentButton];
+        [items addObject:flexSpace];
+        [items addObject:_rightCommentButton];
+    }else{
         [items addObject:flexSpace];
     }
 
@@ -304,6 +351,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _toolbar = nil;
     _previousButton = nil;
     _nextButton = nil;
+    _leftCommentButton = nil;
+    _rightCommentButton = nil;
     _progressHUD = nil;
     [super viewDidUnload];
 }
@@ -422,6 +471,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [[UIApplication sharedApplication] setStatusBarStyle:_previousStatusBarStyle animated:animated];
     }
     
+    [self.navigationController.navigationBar setTitleTextAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],NSForegroundColorAttributeName:[UIColor blackColor]}];
+    
 	// Super
 	[super viewWillDisappear:animated];
     
@@ -449,6 +500,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     navBar.barStyle = UIBarStyleBlackTranslucent;
     [navBar setBackgroundImage:nil forBarMetrics:UIBarMetricsDefault];
     [navBar setBackgroundImage:nil forBarMetrics:UIBarMetricsLandscapePhone];
+    [navBar setTitleTextAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],NSForegroundColorAttributeName:[UIColor whiteColor]}];
 }
 
 - (void)storePreviousNavBarAppearance {
@@ -1081,7 +1133,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
 	// Title
     NSUInteger numberOfPhotos = [self numberOfPhotos];
-    if (_gridController) {
+    if (self.displayCommentToolBar) {
+        self.title = @"活动详情";
+    } else if (_gridController) {
         if (_gridController.selectionMode) {
             self.title = NSLocalizedString(@"Select Photos", nil);
         } else {
@@ -1146,6 +1200,20 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (void)showNextPhotoAnimated:(BOOL)animated {
     [self jumpToPageAtIndex:_currentPageIndex+1 animated:animated];
+}
+
+- (void)onLeftCommentAction
+{
+    if (_leftCommentBlock) {
+        _leftCommentBlock();
+    }
+}
+
+- (void)onRightCommentAction
+{
+    if (_rightCommentBlock) {
+        _rightCommentBlock();
+    }
 }
 
 #pragma mark - Interactions
@@ -1580,53 +1648,63 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (void)actionButtonPressed:(id)sender {
 
-    // Only react when image has loaded
-    id <MWPhoto> photo = [self photoAtIndex:_currentPageIndex];
-    if ([self numberOfPhotos] > 0 && [photo underlyingImage]) {
-        
-        // If they have defined a delegate method then just message them
-        if ([self.delegate respondsToSelector:@selector(photoBrowser:actionButtonPressedForPhotoAtIndex:)]) {
-            
-            // Let delegate handle things
-            [self.delegate photoBrowser:self actionButtonPressedForPhotoAtIndex:_currentPageIndex];
-            
-        } else {
-            
-            // Show activity view controller
-            NSMutableArray *items = [NSMutableArray arrayWithObject:[photo underlyingImage]];
-            if (photo.caption) {
-                [items addObject:photo.caption];
-            }
-            self.activityViewController = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
-            
-            // Show loading spinner after a couple of seconds
-            double delayInSeconds = 2.0;
-            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-            dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                if (self.activityViewController) {
-                    [self showProgressHUDWithMessage:nil];
-                }
-            });
-
-            // Show
-            typeof(self) __weak weakSelf = self;
-            [self.activityViewController setCompletionHandler:^(NSString *activityType, BOOL completed) {
-                weakSelf.activityViewController = nil;
-                [weakSelf hideControlsAfterDelay];
-                [weakSelf hideProgressHUD:YES];
-            }];
-            // iOS 8 - Set the Anchor Point for the popover
-            if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8")) {
-                self.activityViewController.popoverPresentationController.barButtonItem = _actionButton;
-            }
-            [self presentViewController:self.activityViewController animated:YES completion:nil];
-
+    if (self.displayCommentToolBar) {
+        [self showShareSheet];
+        if (_shareCommentBlock) {
+            _shareCommentBlock();
         }
         
-        // Keep controls hidden
-        [self setControlsHidden:NO animated:YES permanent:YES];
+    }else{
+        // Only react when image has loaded
+        id <MWPhoto> photo = [self photoAtIndex:_currentPageIndex];
+        if ([self numberOfPhotos] > 0 && [photo underlyingImage]) {
+            
+            // If they have defined a delegate method then just message them
+            if ([self.delegate respondsToSelector:@selector(photoBrowser:actionButtonPressedForPhotoAtIndex:)]) {
+                
+                // Let delegate handle things
+                [self.delegate photoBrowser:self actionButtonPressedForPhotoAtIndex:_currentPageIndex];
+                
+            } else {
+                
+                // Show activity view controller
+                NSMutableArray *items = [NSMutableArray arrayWithObject:[photo underlyingImage]];
+                if (photo.caption) {
+                    [items addObject:photo.caption];
+                }
+                self.activityViewController = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+                
+                // Show loading spinner after a couple of seconds
+                double delayInSeconds = 2.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    if (self.activityViewController) {
+                        [self showProgressHUDWithMessage:nil];
+                    }
+                });
+                
+                // Show
+                typeof(self) __weak weakSelf = self;
+                [self.activityViewController setCompletionHandler:^(NSString *activityType, BOOL completed) {
+                    weakSelf.activityViewController = nil;
+                    [weakSelf hideControlsAfterDelay];
+                    [weakSelf hideProgressHUD:YES];
+                }];
+                // iOS 8 - Set the Anchor Point for the popover
+                if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8")) {
+                    self.activityViewController.popoverPresentationController.barButtonItem = _actionButton;
+                }
+                [self presentViewController:self.activityViewController animated:YES completion:nil];
+                
+            }
+            
+            // Keep controls hidden
+            [self setControlsHidden:NO animated:YES permanent:YES];
+            
+        }
 
     }
+    
     
 }
 
@@ -1665,5 +1743,119 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
     self.navigationController.navigationBar.userInteractionEnabled = YES;
 }
+
+#pragma mark - share sheet
+//分享Sheet
+- (void)initShareSheet
+{
+    //灰色蒙板
+    cover = [UIButton buttonWithType:UIButtonTypeCustom];
+    cover.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
+    cover.backgroundColor = [UIColor blackColor];
+    cover.alpha = 0;
+    [cover setTag:108];
+    [self.view addSubview:cover];
+    
+    
+    //分享菜单框
+    shareSheet = [[UIView alloc] initWithFrame:CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, shareSheetHeight)];
+    shareSheet.backgroundColor = [UIColor whiteColor];
+    [self.view addSubview:shareSheet];
+    [self.view bringSubviewToFront:shareSheet];
+    //分享菜单框添加分享途径
+    UILabel *title = [[UILabel alloc] initWithFrame:CGRectMake(5, 12, self.view.frame.size.width, 20)];
+    title.text = @"分享至";
+    title.font = [UIFont systemFontOfSize:14];
+    title.textColor = [UIColor grayColor];
+    [shareSheet addSubview:title];
+    
+    UIImage *friendIcon = [UIImage imageNamed:@"icon_share_wechatfriend"];
+    UIImage *circleIcon = [UIImage imageNamed:@"icon_share_wechatcircle"];
+    CGFloat Margin = (self.view.frame.size.width - 2 * 50) / 3;
+    UIButton *friend = [UIButton buttonWithType:UIButtonTypeCustom];
+    friend.frame = CGRectMake(Margin, 46, 60, 60);
+    [friend setImage:friendIcon forState:UIControlStateNormal];
+    [friend setTitleEdgeInsets:UIEdgeInsetsMake(40, -40, 0, 0)];
+    [friend setImageEdgeInsets:UIEdgeInsetsMake(5, 0, 20,10)];
+    [friend setTitle:@"微信好友" forState:UIControlStateNormal];
+    [friend setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+    friend.titleLabel.font = [UIFont systemFontOfSize:13];
+    [friend addTarget:self action:@selector(shareToFriend:) forControlEvents:UIControlEventTouchUpInside];
+    [shareSheet addSubview:friend];
+    
+    UIButton *circle = [UIButton buttonWithType:UIButtonTypeCustom];
+    circle.frame = CGRectMake((CGRectGetMaxX(friend.frame) + Margin), 46, 60, 60);
+    [circle setTitleEdgeInsets:UIEdgeInsetsMake(40, -40, 0, 0)];
+    [circle setImageEdgeInsets:UIEdgeInsetsMake(5, 0, 20,10)];
+    [circle setImage:circleIcon forState:UIControlStateNormal];
+    [circle setTitle:@"微信朋友圈" forState:UIControlStateNormal];
+    [circle setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+    circle.titleLabel.font = [UIFont systemFontOfSize:13];
+    [circle addTarget:self action:@selector(shareToWechatCircle:) forControlEvents:UIControlEventTouchUpInside];
+    [shareSheet addSubview:circle];
+    
+    [cover addTarget:self action:@selector(coverClick) forControlEvents:UIControlEventTouchUpInside];
+    //添加分割线
+    UIView *line = [[UIView alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(friend.frame) + 31, self.view.frame.size.width, 1)];
+    line.backgroundColor = [UIColor colorWithRed:(230.0f)/255.0f green:(234.0f)/255.0f blue:(238.0f)/255.0f alpha:1.0f];
+    line.alpha = 0.3;
+    [shareSheet addSubview:line];
+    //添加取消按钮
+    UIButton *cancel = [[UIButton alloc] initWithFrame:CGRectMake(0, CGRectGetMaxY(line.frame) + 5, self.view.frame.size.width, shareSheet.frame.size.height - CGRectGetMaxY(line.frame))];
+    //为文字添加下划线
+    //NSMutableAttributedString *str = [[NSMutableAttributedString alloc] initWithString:@"取消"];
+    //    NSRange strRange = {0,[str length]};
+    //    [str addAttribute:NSUnderlineStyleAttributeName value:[NSNumber numberWithInteger:NSUnderlineStyleSingle] range:strRange];
+    //    [cancel setAttributedTitle:str forState:UIControlStateNormal];
+    [cancel setTitle:@"取消" forState:UIControlStateNormal];
+    [cancel setTitleColor:[UIColor grayColor] forState:UIControlStateNormal];
+    cancel.titleLabel.font = [UIFont systemFontOfSize:14];
+    [cancel setTitleEdgeInsets:UIEdgeInsetsMake(0, 0, 10, 0)];
+    [cancel addTarget:self action:@selector(coverClick) forControlEvents:UIControlEventTouchUpInside];
+    [shareSheet addSubview:cancel];
+}
+
+- (void)showShareSheet
+{
+    cover.hidden = NO;
+    
+    //分享菜单框动画从底部弹出
+    [UIView animateWithDuration:0.3 animations:^{
+        cover.alpha = 0.5;
+        shareSheet.frame = CGRectMake(0, self.view.frame.size.height - shareSheetHeight, self.view.frame.size.width, shareSheetHeight);
+        
+    }];
+}
+
+
+-(void)coverClick
+{
+    if (cover.hidden == YES) {
+        return;
+    }
+    //分享菜单框动画收回
+    [UIView animateWithDuration:0.2 animations:^{
+        cover.alpha = 0;
+        shareSheet.frame = CGRectMake(0, self.view.frame.size.height, self.view.frame.size.width, shareSheetHeight);
+        cover.hidden = YES;
+    }];
+}
+
+- (void)shareToWechatCircle:(UIButton *)btn
+{
+    [self coverClick];
+    if (_shareCommentToWechatCircleBlock) {
+        _shareCommentToWechatCircleBlock();
+    }
+}
+
+- (void)shareToFriend:(UIButton *)btn
+{
+    [self coverClick];
+    if (_shareCommentToFriendBlock) {
+        _shareCommentToFriendBlock();
+    }
+}
+
 
 @end
