@@ -85,6 +85,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _didSavePreviousStateOfNavBar = NO;
     self.automaticallyAdjustsScrollViewInsets = NO;
     
+    _countComment = 0;
+    _informationTitle = @"详情";
+    
     // Listen for MWPhoto notifications
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(handleMWPhotoLoadingDidEndNotification:)
@@ -187,12 +190,14 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
     }
     if (self.displayCommentToolBar) {
-        UIButton *leftCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 100, 44)];
-        UIImageView *commontIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_text_name"]];
+        CGFloat btnPadding1 = 15;
+        CGFloat btnWidth1 = 100;
+        UIButton *leftCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, btnWidth1, 44)];
+        UIImageView *commontIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_comment"]];
         CGFloat commentIconWidth = commontIcon.frame.size.width;
-        commontIcon.center = CGPointMake(commentIconWidth/2, (44-commentIconWidth)/2);
+        commontIcon.center = CGPointMake(commentIconWidth/2, 44/2);
         [leftCommontView addSubview:commontIcon];
-        UILabel *commontLabel = [[UILabel alloc] initWithFrame:CGRectMake(commentIconWidth, 0, 100-commentIconWidth, 44)];
+        UILabel *commontLabel = [[UILabel alloc] initWithFrame:CGRectMake(commentIconWidth+btnPadding1, 0, btnWidth1-commentIconWidth-btnPadding1, 44)];
         commontLabel.font = [UIFont systemFontOfSize:14];
         commontLabel.textColor = [UIColor colorWithRed:(101.0f)/255.0f green:(102.0f)/255.0f blue:(106.0f)/255.0f alpha:1.0f];
         commontLabel.text = @"评论一下";
@@ -200,12 +205,14 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [leftCommontView addTarget:self action:@selector(onLeftCommentAction) forControlEvents:UIControlEventTouchUpInside];
         _leftCommentButton = [[UIBarButtonItem alloc] initWithCustomView:leftCommontView];
         
-        UIButton *rightCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 60, 44)];
-        UIImageView *commontIcon2 = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_text_name"]];
+        CGFloat btnPadding2 = 10;
+        CGFloat btnWidth2 = 80;
+        UIButton *rightCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, btnWidth2, 44)];
+        UIImageView *commontIcon2 = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_btn_comment"]];
         CGFloat commentIcon2Width = commontIcon2.frame.size.width;
-        commontIcon2.center = CGPointMake(commentIcon2Width/2, (44-commentIcon2Width)/2);
+        commontIcon2.center = CGPointMake(commentIcon2Width/2, 44/2);
         [rightCommontView addSubview:commontIcon2];
-        _commentCountLabel = [[UILabel alloc] initWithFrame:CGRectMake(44, 0, 60-commentIcon2Width, 44)];
+        _commentCountLabel = [[UILabel alloc] initWithFrame:CGRectMake(commentIcon2Width+btnPadding2, 0, btnWidth2-commentIcon2Width-btnPadding2, 44)];
         _commentCountLabel.font = [UIFont systemFontOfSize:14];
         _commentCountLabel.textColor = [UIColor colorWithRed:(101.0f)/255.0f green:(102.0f)/255.0f blue:(106.0f)/255.0f alpha:1.0f];
         _commentCountLabel.text = _countComment > 0 ? [NSString stringWithFormat:@"%d",_countComment] : @"";
@@ -308,13 +315,13 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
 
     // Right - Action
-    if (_actionButton && !(!hasItems && !self.navigationItem.rightBarButtonItem)) {
+    if (_actionButton && !(!hasItems )) {   //&& !self.navigationItem.rightBarButtonItem
         [items addObject:_actionButton];
     } else {
         // We're not showing the toolbar so try and show in top right
         if (_actionButton)
             self.navigationItem.rightBarButtonItem = _actionButton;
-        [items addObject:fixedSpace];
+        //[items addObject:fixedSpace];
     }
 
     // Toolbar visibility
@@ -330,6 +337,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [_toolbar removeFromSuperview];
     } else {
         [self.view addSubview:_toolbar];
+        
+        [self.view bringSubviewToFront:cover];
+        [self.view bringSubviewToFront:shareSheet];
     }
     
     // Update nav
@@ -449,8 +459,8 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     
     // Check that we're disappearing for good
     // self.isMovingFromParentViewController just doesn't work, ever. Or self.isBeingDismissed
-    if ((_doneButton && self.navigationController.isBeingDismissed) ||
-        ([self.navigationController.viewControllers objectAtIndex:0] != self && ![self.navigationController.viewControllers containsObject:self])) {
+    if (((_doneButton || _leftCommentButton) && self.navigationController.isBeingDismissed) ||
+        ([self.navigationController.viewControllers objectAtIndex:0] != self )) {   //&& ![self.navigationController.viewControllers containsObject:self] //当PhotoBrowser不是当前显示的Controller时，将UINavigationBar的状态还原
 
         // State
         _viewIsActive = NO;
@@ -1134,7 +1144,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 	// Title
     NSUInteger numberOfPhotos = [self numberOfPhotos];
     if (self.displayCommentToolBar) {
-        self.title = @"活动详情";
+        self.title = _informationTitle;
     } else if (_gridController) {
         if (_gridController.selectionMode) {
             self.title = NSLocalizedString(@"Select Photos", nil);
@@ -1856,6 +1866,20 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _shareCommentToFriendBlock();
     }
 }
+
+- (void)setCountComment:(int)countComment
+{
+    _countComment = countComment;
+    _commentCountLabel.text = _countComment > 0 ? [NSString stringWithFormat:@"%d",_countComment] : @"";
+}
+
+
+- (void)setInformationTitle:(NSString *)informationTitle
+{
+    _informationTitle = informationTitle;
+    self.title = _informationTitle;
+}
+
 
 
 @end

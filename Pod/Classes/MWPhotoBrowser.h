@@ -61,7 +61,7 @@
 @property (copy, nonatomic) void(^shareCommentToFriendBlock)();
 @property (copy, nonatomic) void(^shareCommentToWechatCircleBlock)();
 
-@property(nonatomic,copy)NSString *detailID;
+@property(nonatomic,copy)NSString *informationTitle;
 @property(nonatomic,assign)int countComment;
 
 // Customise image selection icons as they are the only icons with a colour tint
