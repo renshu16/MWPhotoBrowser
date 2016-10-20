@@ -30,7 +30,8 @@ static const CGFloat labelPadding = 10;
         self.tintColor = nil;
         self.barTintColor = nil;
         self.barStyle = UIBarStyleBlackTranslucent;
-        [self setBackgroundImage:nil forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+        [self setBackgroundImage:[UIImage imageNamed:@"navbar_bg_halftranslent"] forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
+        [self setShadowImage:[UIImage new] forToolbarPosition:UIBarPositionAny];
         self.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleTopMargin|UIViewAutoresizingFlexibleLeftMargin|UIViewAutoresizingFlexibleRightMargin;
         [self setupCaption];
     }

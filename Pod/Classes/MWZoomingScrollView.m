@@ -46,7 +46,8 @@
 		// Image view
 		_photoImageView = [[MWTapDetectingImageView alloc] initWithFrame:CGRectZero];
 		_photoImageView.tapDelegate = self;
-		_photoImageView.contentMode = UIViewContentModeCenter;
+//        _photoImageView.contentMode = UIViewContentModeCenter;
+        _photoImageView.contentMode = UIViewContentModeScaleAspectFit; //modify by rensq
 		_photoImageView.backgroundColor = [UIColor blackColor];
 		[self addSubview:_photoImageView];
 		
@@ -146,7 +147,8 @@
 			// Setup photo frame
 			CGRect photoImageViewFrame;
 			photoImageViewFrame.origin = CGPointZero;
-			photoImageViewFrame.size = img.size;
+//			photoImageViewFrame.size = img.size;
+            photoImageViewFrame.size = self.bounds.size; //modify by rensq
 			_photoImageView.frame = photoImageViewFrame;
 			self.contentSize = photoImageViewFrame.size;
 
