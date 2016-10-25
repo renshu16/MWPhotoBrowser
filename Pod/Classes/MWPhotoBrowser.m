@@ -190,7 +190,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         }
     }
     if (self.displayCommentToolBar) {
-        CGFloat btnPadding1 = 15;
+        CGFloat btnPadding1 = 6;
         CGFloat btnWidth1 = 100;
         UIButton *leftCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, btnWidth1, 44)];
         UIImageView *commontIcon = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_comment"]];
@@ -205,14 +205,15 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [leftCommontView addTarget:self action:@selector(onLeftCommentAction) forControlEvents:UIControlEventTouchUpInside];
         _leftCommentButton = [[UIBarButtonItem alloc] initWithCustomView:leftCommontView];
         
-        CGFloat btnPadding2 = 10;
-        CGFloat btnWidth2 = 80;
+        CGFloat btnPadding2 = 6;
+        CGFloat btnWidth2 = 60;
         UIButton *rightCommontView = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, btnWidth2, 44)];
         UIImageView *commontIcon2 = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"icon_btn_comment"]];
         CGFloat commentIcon2Width = commontIcon2.frame.size.width;
         commontIcon2.center = CGPointMake(commentIcon2Width/2, 44/2);
         [rightCommontView addSubview:commontIcon2];
         _commentCountLabel = [[UILabel alloc] initWithFrame:CGRectMake(commentIcon2Width+btnPadding2, 0, btnWidth2-commentIcon2Width-btnPadding2, 44)];
+        _commentCountLabel.textAlignment = NSTextAlignmentCenter;
         _commentCountLabel.font = [UIFont systemFontOfSize:14];
         _commentCountLabel.textColor = [UIColor colorWithRed:(101.0f)/255.0f green:(102.0f)/255.0f blue:(106.0f)/255.0f alpha:1.0f];
         _commentCountLabel.text = _countComment > 0 ? [NSString stringWithFormat:@"%d",_countComment] : @"";
