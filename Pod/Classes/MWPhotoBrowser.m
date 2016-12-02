@@ -67,6 +67,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _previousPageIndex = NSUIntegerMax;
     _currentVideoIndex = NSUIntegerMax;
     _displayActionButton = YES;
+    _displayShareButton = NO;
     _displayNavArrows = NO;
     _displayCommentToolBar = NO;
     _zoomPhotosToFill = YES;
@@ -182,12 +183,20 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _nextButton = [[UIBarButtonItem alloc] initWithImage:nextButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(gotoNextPage)];
     }
     if (self.displayActionButton) {
-        if (self.displayCommentToolBar) {
-            UIImage *shareButtonImage = [UIImage imageNamed:@"icon_share_right"];
-            _actionButton = [[UIBarButtonItem alloc] initWithImage:shareButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(actionButtonPressed:)];
-        }else{
-            _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
-        }
+        _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
+        
+//        UIImage *shareButtonImage = [UIImage imageNamed:@"icon_share_right"];
+//        _actionButton = [[UIBarButtonItem alloc] initWithImage:shareButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(actionButtonPressed:)];
+    }
+    if (self.displayShareButton) {
+//        UIImage *shareButtonImage = [UIImage imageNamed:@"icon_share_right"];
+//        _shareButton = [[UIBarButtonItem alloc] initWithImage:shareButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(actionButtonPressed:)];
+        
+        UIButton *shareBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [shareBtn setImage: [UIImage imageNamed:@"icon_share_right_white"] forState:UIControlStateNormal];
+        shareBtn.frame = CGRectMake(0, 0, 30, 30);
+        [shareBtn addTarget:self action:@selector(shareButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        _shareButton = [[UIBarButtonItem alloc] initWithCustomView:shareBtn];
     }
     if (self.displayCommentToolBar) {
         CGFloat btnPadding1 = 6;
@@ -320,8 +329,16 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [items addObject:_actionButton];
     } else {
         // We're not showing the toolbar so try and show in top right
-        if (_actionButton)
+        if (_actionButton && _shareButton){
+            self.navigationItem.rightBarButtonItems = @[_actionButton,_shareButton];
+        }
+        else if(_actionButton){
             self.navigationItem.rightBarButtonItem = _actionButton;
+        }
+        else if(_shareButton){
+            self.navigationItem.rightBarButtonItem = _shareButton;
+        }
+        
         //[items addObject:fixedSpace];
     }
 
@@ -482,7 +499,10 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         [[UIApplication sharedApplication] setStatusBarStyle:_previousStatusBarStyle animated:animated];
     }
     
-    [self.navigationController.navigationBar setTitleTextAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],NSForegroundColorAttributeName:[UIColor blackColor]}];
+//    [self.navigationController.navigationBar setTitleTextAttributes:@{NSFontAttributeName:[UIFont systemFontOfSize:19],NSForegroundColorAttributeName:[UIColor whiteColor]}];
+    [self.navigationController.navigationBar setTitleTextAttributes:@{NSForegroundColorAttributeName : [UIColor whiteColor],
+                                  NSFontAttributeName : [UIFont fontWithName:@"HelveticaNeue-Light" size:19]}];
+    
     
 	// Super
 	[super viewWillDisappear:animated];
@@ -1177,9 +1197,15 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     if ([photo underlyingImage] == nil || ([photo respondsToSelector:@selector(isVideo)] && photo.isVideo)) {
         _actionButton.enabled = NO;
         _actionButton.tintColor = [UIColor clearColor]; // Tint to hide button
+        
+        _shareButton.enabled = NO;
+        _shareButton.tintColor = [UIColor clearColor]; // Tint to hide button
     } else {
         _actionButton.enabled = YES;
         _actionButton.tintColor = nil;
+        
+        _shareButton.enabled = YES;
+        _shareButton.tintColor = nil;
     }
 	
 }
@@ -1411,6 +1437,9 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     [_gridController adjustOffsetsAsRequired];
     
     // Hide action button on nav bar if it exists
+    
+    
+//    [self.navigationItem.rightBarButtonItems containsObject:_actionButton]    //TODO adapt multi-rightBar
     if (self.navigationItem.rightBarButtonItem == _actionButton) {
         _gridPreviousRightNavItem = _actionButton;
         [self.navigationItem setRightBarButtonItem:nil animated:YES];
@@ -1659,13 +1688,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
 - (void)actionButtonPressed:(id)sender {
 
-    if (self.displayCommentToolBar) {
-        [self showShareSheet];
-        if (_shareCommentBlock) {
-            _shareCommentBlock();
-        }
-        
-    }else{
+    if(sender == _actionButton){
         // Only react when image has loaded
         id <MWPhoto> photo = [self photoAtIndex:_currentPageIndex];
         if ([self numberOfPhotos] > 0 && [photo underlyingImage]) {
@@ -1717,6 +1740,14 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
     
     
+}
+
+- (void)shareButtonPressed:(id)sender
+{
+    [self showShareSheet];
+    if (_shareCommentBlock) {
+        _shareCommentBlock();
+    }
 }
 
 #pragma mark - Action Progress

@@ -45,6 +45,7 @@
 @property (nonatomic) BOOL displayNavArrows;
 @property (nonatomic) BOOL displayCommentToolBar;
 @property (nonatomic) BOOL displayActionButton;
+@property (nonatomic) BOOL displayShareButton;
 @property (nonatomic) BOOL displaySelectionButtons;
 @property (nonatomic) BOOL alwaysShowControls;
 @property (nonatomic) BOOL enableGrid;

@@ -34,7 +34,7 @@
 	// Navigation & controls
 	UIToolbar *_toolbar;
 	NSTimer *_controlVisibilityTimer;
-	UIBarButtonItem *_previousButton, *_nextButton, *_actionButton, *_doneButton;
+	UIBarButtonItem *_previousButton, *_nextButton, *_actionButton, *_doneButton, *_shareButton;
     UIBarButtonItem *_leftCommentButton, *_rightCommentButton;
     UILabel *_commentCountLabel;
     MBProgressHUD *_progressHUD;
