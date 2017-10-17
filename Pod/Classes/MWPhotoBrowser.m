@@ -176,8 +176,14 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
         _previousButton = [[UIBarButtonItem alloc] initWithImage:previousButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(gotoPreviousPage)];
         _nextButton = [[UIBarButtonItem alloc] initWithImage:nextButtonImage style:UIBarButtonItemStylePlain target:self action:@selector(gotoNextPage)];
     }
+    if (self.displayNavAlbum) {
+        _albumButton = [[UIBarButtonItem alloc] initWithTitle:@"设为封面" style:UIBarButtonItemStylePlain target:self action:@selector(albumButtonPressed:)];
+    }
     if (self.displayActionButton) {
         _actionButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(actionButtonPressed:)];
+    }
+    if (self.displayDeleteButton) {
+        _actionButton = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"delete-white"] style:UIBarButtonItemStylePlain target:self action:@selector(deleteButtonPressed:)];
     }
     
     // Update
@@ -250,11 +256,15 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 
     // Middle - Nav
     if (_previousButton && _nextButton && numberOfPhotos > 1) {
-        hasItems = YES;
+        //hasItems = YES;
         [items addObject:flexSpace];
         [items addObject:_previousButton];
         [items addObject:flexSpace];
         [items addObject:_nextButton];
+        [items addObject:flexSpace];
+    } else if (_albumButton) {
+        [items addObject:flexSpace];
+        [items addObject:_albumButton];
         [items addObject:flexSpace];
     } else {
         [items addObject:flexSpace];
@@ -303,6 +313,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     _recycledPages = nil;
     _toolbar = nil;
     _previousButton = nil;
+    _albumButton = nil;
     _nextButton = nil;
     _progressHUD = nil;
     [super viewDidUnload];
@@ -1577,7 +1588,16 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
 }
 
 #pragma mark - Actions
-
+- (void)deleteButtonPressed:(id)sender {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(photoBrowser:deleteAtIndex:)]) {
+        [self.delegate photoBrowser:self deleteAtIndex:_currentPageIndex];
+    }
+}
+- (void)albumButtonPressed:(id)sender {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(photoBrowser:albumAtIndex:)]) {
+        [self.delegate photoBrowser:self albumAtIndex:_currentPageIndex];
+    }
+}
 - (void)actionButtonPressed:(id)sender {
 
     // Only react when image has loaded
